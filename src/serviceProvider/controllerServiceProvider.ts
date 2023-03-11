@@ -16,6 +16,9 @@ import StopScriptController from "../controller/automation/stopScriptController.
 import DeleteScriptController from "../controller/automation/deleteScriptController.js";
 import GetLogController from "../controller/automation/getLogController.js";
 import StatusScriptController from "../controller/automation/statusScriptController.js";
+import CreateVirtualDeviceController from "../controller/virtualDevices/createVirtualDeviceController.js";
+import Settings from "../settings/settings.js";
+import UuidFactory from "../factory/uuidFactory.js";
 
 export default class ControllerServiceProvider implements ServiceProvider
 {
@@ -92,6 +95,14 @@ export default class ControllerServiceProvider implements ServiceProvider
         container.set('controller.automation.getLog', () => {
             return new GetLogController(
                 container.get('automation.scriptRuntime') as ScriptRuntime,
+            );
+        });
+
+        // Virtual device management
+        container.set('controller.virtualDevices.create', () => {
+            return new CreateVirtualDeviceController(
+                container.get('factory.uuid') as UuidFactory,
+                container.get('settings') as Settings,
             );
         });
     }

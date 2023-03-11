@@ -5,7 +5,7 @@ import Settings from "../settings/settings.js";
 import KnownSerialDevice from "../settings/knownSerialDevice.js";
 import Device from "./device.js";
 import DeviceNameGenerator from "./deviceNameGenerator.js";
-import GenericDevice from "./generic/genericDevice.js";
+import GenericSerialDevice from "./generic/genericSerialDevice.js";
 import GenericDeviceAttribute, {GenericDeviceAttributeModifier} from "./generic/genericDeviceAttribute.js";
 import BoolGenericDeviceAttribute from "./generic/boolGenericDeviceAttribute.js";
 import FloatGenericDeviceAttribute from "./generic/floatGenericDeviceAttribute.js";
@@ -29,14 +29,22 @@ export default class SerialDeviceFactory
     }
 
     public async create(deviceInfoStr: string, syncPort: SynchronousSerialPort, portInfo: PortInfo): Promise<Device|null> {
+        if (undefined === portInfo.serialNumber) {
+            throw new Error(`Serial number of this device is unknown`);
+        }
+
         const [deviceType, deviceVersion, protocolVersion] = deviceInfoStr.split(';')[1].split(',');
 
         const knownDevice = this.createKnownDevice(portInfo.serialNumber, deviceType);
 
+        if (undefined === knownDevice.id || undefined === knownDevice.name) {
+            throw new Error(`Id and/or name are unknown for device with serial no. '${portInfo.serialNumber}'`);
+        }
+
         const deviceAttrResponse = await syncPort.writeLineAndExpect('attributes');
         const deviceAttrs = SerialDeviceFactory.parseDeviceAttributes(deviceAttrResponse);
 
-        const device = new GenericDevice(
+        const device = new GenericSerialDevice(
             deviceVersion,
             knownDevice.id,
             knownDevice.name,
@@ -48,7 +56,7 @@ export default class SerialDeviceFactory
         );
 
         if (null === device) {
-            throw new Error('Unknown device type: ' + deviceType);
+            throw new Error(`Unknown device type: ${deviceType}`);
         }
 
         this.settings.getKnownSerialDevices().set(portInfo.serialNumber, knownDevice);
@@ -61,13 +69,11 @@ export default class SerialDeviceFactory
         const responseParts = response.split(';');
         const attributeList = [];
 
-        if ('attributes' !== responseParts.shift()) {
+        if (undefined === responseParts || responseParts.length !== 2 || 'attributes' !== responseParts[0]) {
             throw new Error(`Invalid response format for parsing attributes: ${response}`);
         }
 
-
-
-        for (const attr of responseParts.shift().split(',')) {
+        for (const attr of responseParts[1].split(',')) {
             const attrParts = attr.split(':');
 
             attributeList.push(this.createAttributeFromValue(attrParts[0], attrParts[1]));
@@ -80,6 +86,9 @@ export default class SerialDeviceFactory
         const re = /^(ro|rw|wo)\[(.+?)\]$/;
         const reRange = /^(\d+)-(\d+)$/;
         const reResult = re.exec(definition);
+        if (null === reResult || 3 !== reResult.length) {
+            throw new Error(`Could not parse definition '${definition}' for attribute with name '${name}'`);
+        }
         const type = reResult[1];
         const value = reResult[2];
         let result: RegExpExecArray|null;
@@ -90,26 +99,23 @@ export default class SerialDeviceFactory
         let attr = null;
 
         if ('bool' === value) {
-            attr = new BoolGenericDeviceAttribute();
+            attr = new BoolGenericDeviceAttribute(name, modifier);
         } else if ('int' === value) {
-            attr = new IntGenericDeviceAttribute();
+            attr = new IntGenericDeviceAttribute(name, modifier);
         } else if ('float' === value) {
-            attr = new FloatGenericDeviceAttribute();
+            attr = new FloatGenericDeviceAttribute(name, modifier);
         } else if ('str' === value) {
-            attr = new StrGenericDeviceAttribute();
+            attr = new StrGenericDeviceAttribute(name, modifier);
         } else if (null !== (result = reRange.exec(value))) {
-            attr = new RangeGenericDeviceAttribute();
+            attr = new RangeGenericDeviceAttribute(name, modifier);
             attr.min = Number(result[1]);
             attr.max = Number(result[2]);
         } else if ((resultList = value.split('|')).length > 0) {
-            attr = new ListGenericDeviceAttribute();
+            attr = new ListGenericDeviceAttribute(name, modifier);
             attr.values = resultList;
         } else {
             throw new Error(`Unknown attribute data type: ${value}`);
         }
-
-        attr.name = name;
-        attr.modifier = modifier;
 
         return attr;
     }
@@ -127,17 +133,19 @@ export default class SerialDeviceFactory
     }
 
     private createKnownDevice(serialNo: string, deviceType: string): KnownSerialDevice {
-        if (this.settings.getKnownSerialDevices().has(serialNo)) {
-            return this.settings.getKnownSerialDevices().get(serialNo);
+        const knownDevice = this.settings.getKnownSerialDevices().get(serialNo);
+
+        if (undefined !== knownDevice) {
+            return knownDevice;
         }
 
-        const knownDevice = new KnownSerialDevice();
+        const newDevice = new KnownSerialDevice();
 
-        knownDevice.id = this.uuidFactory.create();
-        knownDevice.serialNo = serialNo;
-        knownDevice.name = this.nameGenerator.generateName();
-        knownDevice.type = deviceType;
+        newDevice.id = this.uuidFactory.create();
+        newDevice.serialNo = serialNo;
+        newDevice.name = this.nameGenerator.generateName();
+        newDevice.type = deviceType;
 
-        return knownDevice;
+        return newDevice;
     }
 }

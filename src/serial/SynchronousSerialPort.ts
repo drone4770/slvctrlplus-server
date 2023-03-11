@@ -8,9 +8,9 @@ export default class SynchronousSerialPort {
 
     private pending = false;
 
-    private lastSend: Date|null;
+    private lastSend: Date|null = null;
 
-    private lastReceive: Date|null;
+    private lastReceive: Date|null = null;
 
     private readonly queue: SequentialTaskQueue;
 
@@ -25,25 +25,21 @@ export default class SynchronousSerialPort {
     }
 
     public async writeAndExpect(data: string, timeoutMs = 1000): Promise<string> {
-        let removeListeners: () => void = null;
+        let removeListeners: () => void = () => { /* noop */ };
 
         const promise = new Promise<string>((resolve, reject) => {
 
             this.pending = true;
 
             const errorHandler = (err: Error) => {
-                if (null !== removeListeners) {
-                    removeListeners();
-                }
+                removeListeners();
                 reject(err);
             };
 
             const dataHandler = (receivedData: string): void => {
                 this.lastReceive = new Date();
 
-                if (null !== removeListeners) {
-                    removeListeners();
-                }
+                removeListeners();
                 resolve(receivedData);
             };
 
@@ -57,7 +53,7 @@ export default class SynchronousSerialPort {
             this.reader.on('error', errorHandler);
 
             this.lastSend = new Date();
-            this.writer.write(data, (err: Error) => {
+            this.writer.write(data, (err: Error|null|undefined) => {
                 if (err) {
                     removeListeners();
                     reject(err);

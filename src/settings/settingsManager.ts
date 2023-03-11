@@ -48,6 +48,10 @@ export default class SettingsManager
     }
 
     private save(): void {
+        if (null === this.settings) {
+            return;
+        }
+
         try {
             fs.writeFileSync(
                 this.settingsFilePath,

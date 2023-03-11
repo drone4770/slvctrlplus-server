@@ -11,14 +11,16 @@ import DeviceUpdaterInterface from "../device/deviceUpdaterInterface.js";
 import {starWarsNouns} from "../util/dictionary.js";
 import BufferedDeviceUpdater from "../device/bufferedDeviceUpdater.js";
 import GenericDeviceUpdater from "../device/generic/genericDeviceUpdater.js";
-import GenericDevice from "../device/generic/genericDevice.js";
+import GenericSerialDevice from "../device/generic/genericSerialDevice.js";
+import VirtualDeviceFactory from "../device/virtualDeviceFactory.js";
 
 export default class DeviceServiceProvider implements ServiceProvider
 {
     public register(container: Pimple): void {
         container.set('device.manager', (): DeviceManager => {
             return new DeviceManager(
-                container.get('device.factory') as SerialDeviceFactory,
+                container.get('device.factory.serial') as SerialDeviceFactory,
+                container.get('device.factory.virtual') as VirtualDeviceFactory,
             );
         });
 
@@ -33,17 +35,22 @@ export default class DeviceServiceProvider implements ServiceProvider
             return new DeviceNameGenerator(config);
         })
 
-        container.set('device.factory', () => new SerialDeviceFactory(
+        container.set('device.factory.serial', () => new SerialDeviceFactory(
             container.get('factory.uuid') as UuidFactory,
             container.get('settings') as Settings,
             container.get('device.uniqueNameGenerator') as DeviceNameGenerator,
+        ));
+
+        container.set('device.factory.virtual', () => new VirtualDeviceFactory(
+            container.get('factory.uuid') as UuidFactory,
+            container.get('settings') as Settings,
         ));
 
         container.set('device.updater', (): DeviceUpdaterInterface => {
             const plainToClass  = container.get('serializer.plainToClass') as PlainToClassSerializer;
             const deviceUpdater = new DelegateDeviceUpdater();
 
-            deviceUpdater.add(GenericDevice, new GenericDeviceUpdater(plainToClass));
+            deviceUpdater.add(GenericSerialDevice, new GenericDeviceUpdater(plainToClass));
 
             return new BufferedDeviceUpdater(deviceUpdater);
         });

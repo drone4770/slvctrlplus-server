@@ -5,6 +5,7 @@ import {PortInfo} from "@serialport/bindings-interface/dist/index.js";
 import Device from "./device.js";
 import EventEmitter from "events";
 import DeviceState from "./deviceState.js";
+import VirtualDeviceFactory from "./virtualDeviceFactory.js";
 
 export default class DeviceManager extends EventEmitter
 {
@@ -14,10 +15,12 @@ export default class DeviceManager extends EventEmitter
     private managedDevices: Map<string, null> = new Map();
 
     private readonly serialDeviceFactory: SerialDeviceFactory;
+    private readonly virtualDeviceFactory: VirtualDeviceFactory;
 
-    public constructor(deviceFactory: SerialDeviceFactory) {
+    public constructor(deviceFactory: SerialDeviceFactory, virtualDeviceFactory: VirtualDeviceFactory) {
         super();
         this.serialDeviceFactory = deviceFactory;
+        this.virtualDeviceFactory = virtualDeviceFactory;
     }
 
     public async discoverSerialDevices(): Promise<void> {
@@ -52,8 +55,8 @@ export default class DeviceManager extends EventEmitter
         }
     }
 
-    public addVirtualDevice(): void {
-        // todo
+    public addVirtualDevice(deviceId: string, deviceType: string, deviceName: string): void {
+        this.connectVirtualDevice(deviceId, deviceType, deviceName).catch(console.log);
     }
 
     public addSerialDevice(portInfo: PortInfo): void {
@@ -72,7 +75,7 @@ export default class DeviceManager extends EventEmitter
         port.on('error', err => console.log(err));
 
         // Generic usb-serial device code
-        port.open((err: Error) => {
+        port.open((err: Error|null) => {
             if (null !== err) {
                 console.log('Error in communication with device ' + portInfo.path + ': ' + err.message);
                 return;
@@ -102,7 +105,7 @@ export default class DeviceManager extends EventEmitter
         readyParser.on('ready', readyHandler);
 
         // Generic usb-serial device code
-        port.open((err: Error) => {
+        port.open((err: Error|null) => {
             if (null !== err) {
                 console.log('Error in communication with device ' + portInfo.path + ': ' + err.message);
                 return;
@@ -156,6 +159,45 @@ export default class DeviceManager extends EventEmitter
         console.log('Connected devices: ' + this.connectedDevices.size.toString());
 
         port.on('close', () => {
+            clearInterval(deviceStatusUpdaterInterval);
+            this.connectedDevices.delete(device.getDeviceId);
+
+            this.emit('deviceDisconnected', device);
+
+            console.log('Lost device: ' + device.getDeviceId);
+            console.log('Connected devices: ' + this.connectedDevices.size.toString());
+        });
+    }
+
+    private async connectVirtualDevice(deviceId: string, deviceType: string, deviceName: string): Promise<void>
+    {
+
+        const device = await this.virtualDeviceFactory.create(deviceId, deviceType, deviceName);
+
+        if (null === device) {
+            return;
+        }
+
+        const deviceStatusUpdater = () => {
+            if (device.getState === DeviceState.busy) {
+                return;
+            }
+            device.refreshData();
+            this.emit('deviceRefreshed', device);
+        };
+
+        deviceStatusUpdater();
+
+        const deviceStatusUpdaterInterval = setInterval(deviceStatusUpdater, device.getRefreshInterval);
+
+        this.connectedDevices.set(device.getDeviceId, device);
+
+        this.emit('deviceConnected', device);
+
+        console.log('Assigned device id: ' + device.getDeviceId);
+        console.log('Connected devices: ' + this.connectedDevices.size.toString());
+
+        device.on('close', () => {
             clearInterval(deviceStatusUpdaterInterval);
             this.connectedDevices.delete(device.getDeviceId);
 

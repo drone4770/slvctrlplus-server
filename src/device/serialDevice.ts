@@ -30,13 +30,13 @@ export default abstract class SerialDevice extends Device
     protected parseDataStr(data: string): { [key: string]: string }|null {
         const dataParts: string[] = data.split(';');
 
-        if ('status' !== dataParts.shift()) {
+        if (dataParts.length < 2 || 'status' !== dataParts[0]) {
             return null;
         }
 
         const dataObj: { [key: string]: string } = {};
 
-        for (const dataPart of dataParts.shift().split(',')) {
+        for (const dataPart of dataParts[1].split(',')) {
             const [key, value]: string[] = dataPart.split(':');
 
             dataObj[key] = value;

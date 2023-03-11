@@ -4,14 +4,14 @@ import {Exclude, Expose} from "class-transformer";
 export default class KnownSerialDevice
 {
     @Expose()
-    public id: string;
+    public id: string|undefined;
 
     @Expose()
-    public serialNo: string;
+    public serialNo: string|undefined;
 
     @Expose()
-    public name: string|null;
+    public name: string|undefined;
 
     @Expose()
-    public type: string;
+    public type: string|undefined;
 }

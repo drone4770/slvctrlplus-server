@@ -22,19 +22,19 @@ export declare interface ScriptRuntime {
 export class ScriptRuntime extends EventEmitter
 {
 
-    private scriptCode: VMScript = null;
+    private scriptCode: VMScript |null = null;
 
-    private vm: NodeVM = null;
+    private vm: NodeVM | null  = null;
 
-    private sandbox: Sandbox;
+    private sandbox: Sandbox | null = null;
 
     private readonly deviceRepository: DeviceRepositoryInterface;
 
     private readonly logPath: string;
 
-    private logWriter: WriteStream;
+    private logWriter: WriteStream | undefined;
 
-    private runningSince: Date = null;
+    private runningSince: Date | null = null;
 
     public constructor(deviceRepository: DeviceRepositoryInterface, logPath: string) {
         super();
@@ -79,8 +79,11 @@ export class ScriptRuntime extends EventEmitter
     {
         this.vm = null;
         this.sandbox = null;
-        this.logWriter.close();
         this.runningSince = null;
+
+        if (this.logWriter) {
+            this.logWriter.close();
+        }
 
         this.emit(AutomationEventType.scriptStopped);
         console.log('script stopped')
@@ -88,12 +91,14 @@ export class ScriptRuntime extends EventEmitter
 
     public runForEvent(eventType: DeviceEventType, device: Device): void
     {
-        if (null === this.vm) {
+        if (null === this.vm || null === this.scriptCode) {
             return;
         }
 
-        this.sandbox.event.type = eventType;
-        this.sandbox.event.device = device;
+        if (null !== this.sandbox) {
+            this.sandbox.event.type = eventType;
+            this.sandbox.event.device = device;
+        }
 
         try {
             this.vm.run(this.scriptCode);
@@ -115,13 +120,17 @@ export class ScriptRuntime extends EventEmitter
         return null !== this.runningSince;
     }
 
-    public getRunningSince(): Date
+    public getRunningSince(): Date|null
     {
         return this.runningSince;
     }
 
     private log(data: string): void
     {
+        if (!this.logWriter) {
+            return;
+        }
+
         this.logWriter.write(`${data}\n`);
     }
 }

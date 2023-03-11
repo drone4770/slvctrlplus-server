@@ -15,7 +15,7 @@ export default class CreateScriptController implements ControllerInterface
     public execute(req: Request, res: Response): void
     {
         if(!req.is('text/plain')) {
-            res.status(400).send('Content-Type header must be text/plain');
+            res.status(406).send('Content-Type header must be text/plain');
             return;
         }
 

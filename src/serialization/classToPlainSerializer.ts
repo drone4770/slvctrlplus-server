@@ -9,11 +9,11 @@ export default class ClassToPlainSerializer
         this.options = options;
     }
 
-    public transform<T, V>(object: T, typeOptions: TypeOptions|null = null): V
+    public transform<T extends object, V>(object: T, typeOptions: TypeOptions|null = null): V
     {
         const result = instanceToPlain(object, this.options);
 
-        if (typeOptions !== null && 'discriminator' in typeOptions) {
+        if (typeOptions !== null && 'discriminator' in typeOptions && typeOptions.discriminator) {
             const discriminatorValue = typeOptions.discriminator.subTypes.find(obj => obj.value === object.constructor);
 
             if (undefined === discriminatorValue) {

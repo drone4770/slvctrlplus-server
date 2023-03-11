@@ -12,13 +12,13 @@ export default class Settings
 
     @Expose()
     @Transform(createMapTransformFn(ConfiguredVirtualDevice))
-    private readonly virtualDevices: Map<string, ConfiguredVirtualDevice> = new Map();
+    private readonly configuredVirtualDevices: Map<string, ConfiguredVirtualDevice> = new Map();
 
     public getKnownSerialDevices(): Map<string, KnownSerialDevice> {
         return this.knownSerialDevices;
     }
 
-    public getVirtualDevices(): Map<string, ConfiguredVirtualDevice> {
-        return this.virtualDevices;
+    public getConfiguredVirtualDevices(): Map<string, ConfiguredVirtualDevice> {
+        return this.configuredVirtualDevices;
     }
 }

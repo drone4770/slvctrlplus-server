@@ -17,13 +17,13 @@ export default abstract class Device
     protected state: DeviceState;
 
     @Expose()
-    protected readonly type: string; // This field is only here to expose it explicitly
+    protected readonly type: string|undefined; // This field is only here to expose it explicitly
 
     @Expose()
     protected readonly controllable: boolean;
 
     @Expose()
-    protected lastRefresh: Date;
+    protected lastRefresh: Date|undefined;
 
     protected constructor(
         deviceId: string,

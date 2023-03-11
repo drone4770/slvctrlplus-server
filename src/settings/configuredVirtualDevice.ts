@@ -4,14 +4,11 @@ import {Exclude, Expose} from "class-transformer";
 export default class ConfiguredVirtualDevice
 {
     @Expose()
-    public id: string;
+    public id: string|undefined;
 
     @Expose()
-    public serialNo: string;
+    public name: string|undefined;
 
     @Expose()
-    public name: string|null;
-
-    @Expose()
-    public type: string;
+    public type: string|undefined;
 }
