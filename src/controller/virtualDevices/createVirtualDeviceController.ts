@@ -3,7 +3,7 @@ import ControllerInterface from "../controllerInterface.js";
 import Settings from "../../settings/settings.js";
 import UuidFactory from "../../factory/uuidFactory.js";
 import ConfiguredVirtualDevice from "../../settings/configuredVirtualDevice.js";
-import Schema from "validate";
+import Ajv, {JSONSchemaType, Schema} from "ajv";
 
 export default class CreateVirtualDeviceController implements ControllerInterface
 {
@@ -27,18 +27,34 @@ export default class CreateVirtualDeviceController implements ControllerInterfac
             return;
         }
 
-        const deviceType = 'display';
-        const deviceName = 'Fluffy chewbacca'
-
-        const deviceConfig = new ConfiguredVirtualDevice()
+        const schema = {
+            type: "object",
+            properties: {
+                name: {type: "string", minLength: 3, nullable: false},
+                type: {type: "string", enum: ["display"], nullable: false }
+            },
+            required: ["name", "type"],
+            additionalProperties: false,
+        };
 
         const body = req.body as Partial<ConfiguredVirtualDevice>
 
-        deviceConfig.id = this.uuidFactory.create();
-        deviceConfig.name = deviceName;
-        deviceConfig.type = deviceType;
+        const validator = new Ajv({allErrors: true});
 
-        // this.settings.getConfiguredVirtualDevices().set(deviceConfig.id, deviceConfig);
+        const valid = validator.validate(schema, body);
+
+        if (!valid) {
+            res.header('Content-Type', 'application/json').status(400).json(validator.errors);
+            return;
+        }
+
+        const deviceConfig = new ConfiguredVirtualDevice()
+
+        deviceConfig.id = this.uuidFactory.create();
+        deviceConfig.name = body.name;
+        deviceConfig.type = body.type;
+
+        this.settings.getConfiguredVirtualDevices().set(deviceConfig.id, deviceConfig);
 
         res.header('Content-Type', 'application/json').status(201).json(deviceConfig);
     }
