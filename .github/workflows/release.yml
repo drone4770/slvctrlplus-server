@@ -34,6 +34,7 @@ jobs:
           cwd: ./
           files: |
             ./dist
+            ./node_modules
           outPath: dist.tar.gz
       - name: Create Release Notes File
         env:

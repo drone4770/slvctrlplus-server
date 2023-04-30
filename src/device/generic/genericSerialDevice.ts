@@ -25,6 +25,9 @@ export default class GenericSerialDevice extends SerialDevice
     @Expose()
     private readonly fwVersion: string;
 
+    @Expose()
+    private readonly protocolVersion: number;
+
     public constructor(
         fwVersion: string,
         deviceId: string,
@@ -32,6 +35,7 @@ export default class GenericSerialDevice extends SerialDevice
         deviceModel: string,
         connectedSince: Date,
         syncPort: SynchronousSerialPort,
+        protocolVersion: number,
         portInfo: PortInfo,
         attributes: GenericDeviceAttribute[]
     ) {
@@ -39,6 +43,7 @@ export default class GenericSerialDevice extends SerialDevice
 
         this.deviceModel = deviceModel;
         this.fwVersion = fwVersion;
+        this.protocolVersion = protocolVersion;
         this.attributes = attributes;
     }
 

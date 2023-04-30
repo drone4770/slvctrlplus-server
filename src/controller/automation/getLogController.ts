@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import ControllerInterface from "../controllerInterface.js";
-import AutomationScriptRepositoryInterface from "../../repository/automationScriptRepositoryInterface.js";
 import ScriptRuntime from "../../automation/scriptRuntime.js";
 
 export default class GetLogController implements ControllerInterface

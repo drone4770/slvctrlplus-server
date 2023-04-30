@@ -1,5 +1,5 @@
 enum DeviceEventType {
-    deviceUpdateReceived = "deviceUpdateReceived",
+    deviceUpdateReceived = "deviceUpdate",
     deviceConnected = "deviceConnected",
     deviceDisconnected = "deviceDisconnected",
     deviceRefreshed = "deviceRefreshed",

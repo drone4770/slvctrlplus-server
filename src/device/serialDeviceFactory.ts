@@ -28,7 +28,7 @@ export default class SerialDeviceFactory
         this.nameGenerator = nameGenerator;
     }
 
-    public async create(deviceInfoStr: string, syncPort: SynchronousSerialPort, portInfo: PortInfo): Promise<Device|null> {
+    public async create(deviceInfoStr: string, syncPort: SynchronousSerialPort, portInfo: PortInfo): Promise<Device> {
         if (undefined === portInfo.serialNumber) {
             throw new Error(`Serial number of this device is unknown`);
         }
@@ -51,6 +51,7 @@ export default class SerialDeviceFactory
             deviceType,
             new Date(),
             syncPort,
+            Number(protocolVersion),
             portInfo,
             deviceAttrs
         );

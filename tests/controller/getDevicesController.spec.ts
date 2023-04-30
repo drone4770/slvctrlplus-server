@@ -14,13 +14,18 @@ describe('getDevicesController', () => {
         const syncSerialPort = mock<SynchronousSerialPort>();
         const portInfo = mock<PortInfo>();
 
+        const fwVersion = '10000';
         const deviceUuid = 'foo-bar-baz';
-        const device = new GenericSerialDevice('10000', deviceUuid, 'Aston Martin', 'et312', new Date(), syncSerialPort, portInfo, []);
+        const deviceName = 'Aston Martin';
+        const model = 'et312';
+        const protocolVersion = 10000;
+        const device = new GenericSerialDevice(fwVersion, deviceUuid, deviceName, model, new Date(), syncSerialPort, protocolVersion, portInfo, []);
         const serializedDevice = {
-            fwVersion: '10000',
+            fwVersion: fwVersion,
+            protocolVersion: protocolVersion,
             deviceId: deviceUuid,
-            deviceName: 'Aston Martin',
-            deviceModel: 'et312',
+            deviceName: deviceName,
+            deviceModel: model,
         };
         const responseBody = {
             count: 1,
